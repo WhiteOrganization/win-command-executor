@@ -17,17 +17,17 @@ The application will send voice messages to inform the user of where the process
 #### 1.1.2) Examples
 `java.exe -jar win-command-executor.jar  "del directory" "directory removed successfully" "The directory was not found, please verify the name of the folder"`
 
-no limits:
+with several commands:
 
 `java -jar win-command-executor.jar  "mvn clean" "project cleaned validating..." "Are files from target directory being used?" "mvn validate" "Code format is valid, taking down docker container" "Any code formatting errors found?" "docker-compose down" "Docker container is down, clearing cache" "Have you installed docker yet?" "docker system prune -a -f" "Docker image cleared, deploying application" "Is docker running?" "docker-compose up" "Docker container is up and running" "Is docker running?"`
 
-## 2) How to Set-up the application
-Download the latest release edit the `.bat` file with your commands and execute the file.
+## 2) How to Set up the application?
+Download the latest release edit the `win-command-executor.bat` file with your commands and execute the file.
 
 ## 3) How can I help the project?
 
 ### 3.1) Summary of set up
-This is a simple project and it is very easy to fork and add functionality to it.
+This is a simple project, and it is very easy to fork and add functionality to it.
 
 #### 3.1.1) Development environment
 - [JDK](https://openjdk.org/) version: 	`1.19`

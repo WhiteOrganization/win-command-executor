@@ -1,0 +1,7 @@
+@echo off
+
+REM User, EDIT THIS LINE!
+bin\jdk\bin\java.exe -jar bin\win-command-executor.jar "del directory" "directory removed successfully" "The directory was not found, please verify the name of the folder"
+
+pause
+exit
