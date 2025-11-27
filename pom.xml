@@ -16,7 +16,7 @@
     <!-- region Project data -->
     <groupId>org.white_sdev.utils</groupId>
     <artifactId>win-command-executor</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Command executor for windows</description>
     <!-- This section (packaging) can be defined if the project is meant to be a desktop application or a JAR will be generated. -->
