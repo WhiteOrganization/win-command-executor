@@ -4,7 +4,7 @@ This application will serve as a tool to help you execute sequential commmands i
 ## 1) What is this repository for?
 
 ### 1.1) Quick summary
-Version: `0.1-SNAPSHOT`
+Version: `1.0.1`
 
 #### 1.1.1) How to use
 You can call the jar and send arguments with the following format:

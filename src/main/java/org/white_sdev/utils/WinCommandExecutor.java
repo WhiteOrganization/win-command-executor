@@ -90,11 +90,42 @@ public class WinCommandExecutor {
         String logID = "::sendTextToSpeechMessage([textToSpeechMessage]): ";
         logID = "";
         log.trace("{}Start - textToSpeechMessage:{}", logID, textToSpeechMessage);
-        String textToSpeechCommand = String.format("mshta vbscript:Execute(" +
-                "\"CreateObject(\"\"SAPI.SpVoice\"\").Speak(\"\"%s\"\")(window.close)\")", textToSpeechMessage);
-        var result = executeCommandInConsole(textToSpeechCommand);
-        log.trace("{}Finish - result:{}", logID, result);
-        return result;
+
+        if (textToSpeechMessage == null || textToSpeechMessage.isBlank()) {
+            log.warn("Empty TTS message");
+            return false;
+        }
+
+        // Prefer PowerShell System.Speech (more robust on many Windows setups)
+        try {
+            // Escape single quotes for PowerShell single-quoted string by doubling them
+            String safeForPs = textToSpeechMessage.replace("'", "''");
+            String psCommand = String.format("powershell.exe -NoProfile -Command \"Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('%s')\"", safeForPs);
+            boolean psResult = executeCommandInConsole(psCommand);
+            log.trace("PowerShell TTS result: {}", psResult);
+            if (psResult) return true;
+            log.warn("PowerShell TTS returned false, attempting mshta fallback");
+        } catch (Exception e) {
+            log.warn("PowerShell TTS attempt threw an exception", e);
+        }
+
+        // Fallback: create a temporary .vbs file and run it with cscript (more robust than mshta)
+        try {
+            String safeForVbs = textToSpeechMessage.replace("\"", "\"\"");
+            String vbsContent = "CreateObject(\"SAPI.SpVoice\").Speak \"" + safeForVbs + "\"";
+            java.nio.file.Path temp = java.nio.file.Files.createTempFile("tts", ".vbs");
+            java.nio.file.Files.writeString(temp, vbsContent);
+            String cscriptCmd = String.format("cscript //NoLogo %s", temp.toAbsolutePath().toString());
+            boolean vbsResult = executeCommandInConsole(cscriptCmd);
+            try {
+                java.nio.file.Files.deleteIfExists(temp);
+            } catch (Exception ignore) {}
+            log.trace("vbs TTS result: {}", vbsResult);
+            return vbsResult;
+        } catch (Exception e) {
+            log.error("VBS TTS attempt failed", e);
+            return false;
+        }
     }
 
     @SuppressWarnings("all")

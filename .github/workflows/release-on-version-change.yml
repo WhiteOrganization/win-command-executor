@@ -1,0 +1,96 @@
+name: Detect version change and create tag
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    outputs:
+      release: ${{ steps.decide.outputs.release }}
+
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed so we can create tags
+
+
+      - name: Install libxml2-utils
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          VERSION=$(xmllint --xpath "string(/*[local-name()='project']/*[local-name()='version'])" pom.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up JDK 19
+        id: setup-java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '19'
+
+      - name: Export JAVA19_HOME for maven-antrun
+        run: |
+          echo "JAVA19_HOME=${{ steps.setup-java.outputs.java-home }}" >> $GITHUB_ENV
+
+      - name: Build package
+        run: |
+          mvn -B -DskipTests package
+
+      - name: Get previous version from last tag (if any)
+        id: prev
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "lasttag=$LAST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Determine whether to release
+        id: decide
+        run: |
+          CUR="${{ steps.version.outputs.version }}"
+          LAST="${{ steps.prev.outputs.lasttag }}"
+          LAST="${LAST#v}"   # strip leading v if present
+
+          if [ "$CUR" = "$LAST" ]; then
+            echo "release=false" >> $GITHUB_OUTPUT
+          else
+            echo "release=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create tag and GitHub Release (only if version changed)
+        id: create_release
+        if: steps.decide.outputs.release == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload fat JAR to Release
+        if: steps.decide.outputs.release == 'true'
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: target/win-command-executor/bin/win-command-executor.jar
+          asset_name: win-command-executor-${{ steps.version.outputs.version }}.jar
+          asset_content_type: application/java-archive
+
+      - name: Upload root JAR to Release
+        if: steps.decide.outputs.release == 'true'
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: target/win-command-executor-${{ steps.version.outputs.version }}.jar
+          asset_name: win-command-executor-${{ steps.version.outputs.version }}-raw.jar
+          asset_content_type: application/java-archive
